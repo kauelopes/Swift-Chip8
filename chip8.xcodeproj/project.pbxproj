@@ -14,6 +14,7 @@
 		58E106181E171BB80032D433 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E106171E171BB80032D433 /* ViewController.swift */; };
 		58E1061A1E171BB80032D433 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 58E106191E171BB80032D433 /* Assets.xcassets */; };
 		58E1061D1E171BB90032D433 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 58E1061B1E171BB90032D433 /* Main.storyboard */; };
+		58E106271E17326D0032D433 /* Screen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E106261E17326D0032D433 /* Screen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		58E106191E171BB80032D433 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		58E1061C1E171BB90032D433 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		58E1061E1E171BB90032D433 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		58E106261E17326D0032D433 /* Screen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Screen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 				58E106111E171BB80032D433 /* GameScene.sks */,
 				58E106131E171BB80032D433 /* Actions.sks */,
 				58E106151E171BB80032D433 /* GameScene.swift */,
+				58E106261E17326D0032D433 /* Screen.swift */,
 				58E106171E171BB80032D433 /* ViewController.swift */,
 				58E106191E171BB80032D433 /* Assets.xcassets */,
 				58E1061B1E171BB90032D433 /* Main.storyboard */,
@@ -146,6 +149,7 @@
 				58E106181E171BB80032D433 /* ViewController.swift in Sources */,
 				58E106161E171BB80032D433 /* GameScene.swift in Sources */,
 				58E106101E171BB80032D433 /* AppDelegate.swift in Sources */,
+				58E106271E17326D0032D433 /* Screen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
