@@ -12,10 +12,13 @@ import GameplayKit
 class GameScene: SKScene {
     
     private var screen : Screen!
+    private var chip : Chip8!
+    
     
     
     override func didMove(to view: SKView) {
         screen = Screen(gameScene: self)
+        
     }
     
     override func keyDown(with event: NSEvent) {

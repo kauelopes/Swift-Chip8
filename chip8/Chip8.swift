@@ -12,6 +12,9 @@ import Foundation
 
 
 class Chip8{
+    
+    //# MARK: - Variables
+    
     ///16 registers of Chip8
     ///named v1,v2,...vE,vF
     private var v = [UInt8!](repeating:nil, count: 16)
@@ -19,19 +22,34 @@ class Chip8{
     ///Chip8 memory representation (4K bytes)
     ///
     ///reserved spaces
-    /// + (0x000) - (0x200) CHIP-8 interpreter itself (Let it go!)
-    /// + (0xEA0) - (0xEFF) Call stack
-    /// + (0xEA0) - (0xEFF) Call stack
-    /// + (0xF00) - (0xFFF) Display refresh
+    /// + (0x000) - (0x1BF) CHIP-8 interpreter reserved space
+    /// + (0x1C0) - (0x1FF) Call Stack 64 bytes (16 levels)
+    /// + (0x200) - (0xFFF) Program Memory
+
     private var memory = [UInt8!](repeating:nil, count:4096)
     
     ///Special register to store memory addresses
     private var iRegister : UInt16 = 0
     
     ///Program Counter
-    private var pc : Int = 0x201
+    private var pc : UInt16 = 0x201
     
     private var stackSize : Int = 0
+    
+    private var screen : Screen!
+    
+    
+    
+    init(screen: Screen) {
+        self.screen = screen
+    }
+    
+    
+    
+    
+    
+    
+    //# MARK: - Private Methods
     
     enum Chip8Error: Error {
         case StackNilPop
@@ -56,20 +74,26 @@ class Chip8{
     }
     
     
-    private func pullToStack(num: UInt8) throws -> Bool {
-        if(stackSize<20){
-            memory[0xEFF - stackSize] = num
+    private func pushToStack(num: UInt16) throws{
+        let lastBytes: UInt8 = UInt8(num&0xff)
+        let firstBytes: UInt8 = UInt8((num>>8)&0x0f)
+        
+        if(stackSize<16){
+            memory[0x1FF - stackSize*2] = lastBytes
+            memory[0x1FF - stackSize*2 - 1] = firstBytes
             stackSize+=1
-            return true
         }else{
             throw Chip8Error.StackOverFlow
         }
     }
     
-    private func popFromStack() throws -> UInt8{
+    private func popFromStack() throws -> UInt16{
         if(stackSize>0){
             stackSize-=1
-            return memory[0xEFF - stackSize]
+            let firstBytes : UInt8 = memory[0x1FF - stackSize*2 - 1]
+            let lastBytes : UInt8 = memory[0x1FF - stackSize*2]
+            let result : UInt16 = ( UInt16(firstBytes) << 8) | UInt16(lastBytes)
+            return result
         }else{
             throw Chip8Error.StackNilPop
         }
@@ -83,11 +107,13 @@ class Chip8{
     /// This function gets a op and break it in 4 hexadecimal parts
     /// 0x1234 -> a=1,b=2,c=3,d=4
     
-    public func op(op: UInt16){
-        let d = op & 0xf
-        let c = (op>>4) & 0xf
-        let b = (op>>8) & 0xf
-        let a = (op>>12) & 0xf
+    //# MARK: - Public Methods
+    
+    public func op(op: UInt16) throws {
+        let d : UInt8 = UInt8(op & 0xf)
+        let c : UInt8 = UInt8((op>>4) & 0xf)
+        let b : UInt8 = UInt8((op>>8) & 0xf)
+        let a : UInt8 = UInt8((op>>12) & 0xf)
         
         switch (a,b,c,d) {
             /*
@@ -97,14 +123,15 @@ class Chip8{
             This instruction is only used on the old computers on which Chip-8 was originally implemented. It is ignored by modern interpreters.
             */
         case (0,_,_,_):
-            print("nao implementado")
+            //# TODO: - Verificar validade dessa op
+            pc = UInt16((b<<8)|(c<<4)|(d))
             
             /*
             00E0 - CLS
             Clear the display.
             */
         case (0,0,0xE,0):
-            print("nao implementado")
+            screen.clear()
 
             
             /*
@@ -114,9 +141,7 @@ class Chip8{
             The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
             */
         case (0,0,0xE,0xE):
-            print("nao implementado")
-            
-            
+            try! pc = popFromStack()
             
             /*
             1nnn - JP addr
@@ -125,8 +150,7 @@ class Chip8{
             The interpreter sets the program counter to nnn.
             */
         case (1,_,_,_):
-            print("nao implementado")
-            
+            pc = UInt16((b<<8)|(c<<4)|(d))
             
             
             /*
@@ -136,7 +160,8 @@ class Chip8{
             The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
             */
         case (2,_,_,_):
-            print("nao implementado")
+            try! pushToStack(num: pc)
+            pc = UInt16((b<<8)|(c<<4)|(d))
             
             
             
@@ -147,8 +172,9 @@ class Chip8{
             The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
              */
         case (3,_,_,_):
-            print("nao implementado")
-            
+            if( v[Int(b)] == (c<<4|d)){
+                pc+=2
+            }
             
             
             /*
@@ -157,8 +183,11 @@ class Chip8{
             
             The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
             */
-        case (3,_,_,_):
-            print("nao implementado")
+        case (4,_,_,_):
+            if( v[Int(b)] != (c<<4|d)){
+                pc+=2
+            }
+
             
             
             
@@ -169,7 +198,9 @@ class Chip8{
             The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
             */
         case (5,_,_,0):
-            print("nao implementado")
+            if( v[Int(b)] == v[Int(c)]){
+                pc+=2
+            }
             
             
             
@@ -180,7 +211,7 @@ class Chip8{
             The interpreter puts the value kk into register Vx.
             */
         case (6,_,_,_):
-            print("nao implementado")
+            v[Int(b)] = (c<<4|d)
             
             
             
@@ -471,7 +502,7 @@ class Chip8{
             print("nao implementado")
         
         default:
-            print("OPS, UNKNOW INSTRUCTION")
+            print("OPS, UNKNOWN INSTRUCTION")
         }
         
     }
