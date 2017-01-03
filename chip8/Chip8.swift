@@ -223,7 +223,8 @@ class Chip8{
         
              */
         case (7,_,_,_):
-            print("nao implementado")
+            v[Int(b)] = v[Int(b)] + c<<4|d
+
             
             
             
@@ -235,7 +236,8 @@ class Chip8{
             
             */
         case (8,_,_,0):
-            print("nao implementado")
+            v[Int(b)] = v[Int(c)]
+
             
             
             
@@ -247,7 +249,7 @@ class Chip8{
             
             */
         case (8,_,_,1):
-            print("nao implementado")
+            v[Int(b)] = v[Int(b)] | v[Int(c)]
             
             
             
@@ -258,7 +260,7 @@ class Chip8{
             Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx. A bitwise AND compares the corrseponding bits from two values, and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
             */
         case (8,_,_,2):
-            print("nao implementado")
+            v[Int(b)] = v[Int(b)] & v[Int(c)]
             
             
             
@@ -269,7 +271,7 @@ class Chip8{
             Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx. An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
             */
         case (8,_,_,3):
-            print("nao implementado")
+            v[Int(b)] = v[Int(b)] ^ v[Int(c)]
             
             
             
@@ -280,8 +282,11 @@ class Chip8{
             The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
             */
         case (8,_,_,4):
-            print("nao implementado")
-        
+            var sum : UInt16 = UInt16(v[Int(b)])+UInt16(v[Int(c)])
+            v[Int(0xF)] = UInt8(sum>>8)
+            v[Int(b)] = UInt8(sum&0xff)
+            
+            
             
             
             /*
@@ -291,7 +296,13 @@ class Chip8{
             If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
             */
         case (8,_,_,5):
-            print("nao implementado")
+            if(v[Int(b)]>v[Int(c)]){
+                v[Int(0xF)] = 1
+                v[Int(b)] = v[Int(b)] - v[Int(c)]
+            }else{
+                v[Int(0xF)] = 0
+                v[Int(b)] = v[Int(c)] - v[Int(b)]
+            }
             
             
             
@@ -302,7 +313,8 @@ class Chip8{
         If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
             */
         case (8,_,_,6):
-            print("nao implementado")
+            v[Int(0xF)] = v[Int(b)]%2
+            v[Int(b)] = v[Int(b)]>>1
             
             /*
              8xy7 - SUBN Vx, Vy
@@ -311,7 +323,13 @@ class Chip8{
         If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
         */
         case (8,_,_,7):
-            print("nao implementado")
+            if(v[Int(c)]>v[Int(c)]){
+                v[Int(0xF)] = 1
+                v[Int(b)] = v[Int(c)] - v[Int(b)]
+            }else{
+                v[Int(0xF)] = 0
+                v[Int(b)] = v[Int(b)] - v[Int(c)]
+            }
             
             
             
@@ -322,7 +340,8 @@ class Chip8{
         If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
         */
         case (8,_,_,0xE):
-            print("nao implementado")
+            v[Int(0xF)] = v[Int(b)]>>7
+            v[Int(b)] = v[Int(b)]<<1
             
             
             
@@ -333,7 +352,9 @@ class Chip8{
         The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
         */
         case (9,_,_,0):
-            print("nao implementado")
+            if(v[Int(b)] != v[Int(c)]){
+                pc+=2
+            }
             
             
             
@@ -344,7 +365,7 @@ class Chip8{
         The value of register I is set to nnn.
         */
         case (0xA,_,_,_):
-            print("nao implementado")
+            iRegister = UInt16((b<<8)|(c<<4)|(d))
 
             
             
@@ -355,7 +376,7 @@ class Chip8{
         The program counter is set to nnn plus the value of V0.
         */
         case (0xB,_,_,_):
-            print("nao implementado")
+            pc = UInt16((b<<8)|(c<<4)|(d)) + UInt16(v[0])
             
             
             
@@ -366,7 +387,7 @@ class Chip8{
         The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
         */
         case (0xC,_,_,_):
-            print("nao implementado")
+            v[Int(b)] = UInt8(arc4random_uniform(256)) & (c<<4|d)
             
             
             
@@ -379,7 +400,22 @@ class Chip8{
              
             */
         case (0xD,_,_,_):
-            print("nao implementado")
+            var notCollision = true
+            for i in 0..<Int(d){
+                var drawBuffer = memory[Int(iRegister) + i]
+                for j in 0..<8{
+                    if((( Int(drawBuffer!) >> (7-j))&1) == 1){
+                        notCollision = notCollision && screen.drawPixel(x: Int(v[Int(b)]) + j, y: Int(v[Int(c)]) + i)
+                    }
+                }
+            }
+            if(notCollision){
+                v[Int(0xF)] = 0
+            }else{
+                v[Int(0xF)] = 1
+            }
+            
+            
             
             
             

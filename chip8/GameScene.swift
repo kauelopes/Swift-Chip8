@@ -29,11 +29,13 @@ class GameScene: SKScene {
             let a = Int(arc4random_uniform(30))
             let b = Int(arc4random_uniform(30))
             
-            screen.paintPixel(x: a, y: b, color: SKColor.white)
             print("keyDown: \(event.characters!) keyCode: \(event.keyCode)")
         }
     }
     
+    override func keyUp(with event: NSEvent) {
+        <#code#>
+    }
     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered

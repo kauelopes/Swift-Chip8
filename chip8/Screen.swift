@@ -29,12 +29,22 @@ class Screen{
         }
     }
     
-    func paintPixel(x: Int, y: Int,color: SKColor){
+    private func paintPixel(x: Int, y: Int,color: SKColor){
         if(x>63 || x<0 || y>31 || y<0){
             print("TENTOU MUDAR PIXEL INVALIDO")
         }
         pixels[x][y].fillColor = color
         pixels[x][y].strokeColor = color
+    }
+    
+    func drawPixel(x:Int, y: Int) -> Bool{
+        if(pixels[x][y].strokeColor == SKColor.white){
+            paintPixel(x: x, y: y, color: SKColor.black)
+            return false
+        }
+        paintPixel(x: x, y: y, color: SKColor.white)
+        return true
+        
     }
     
     func clear(){
