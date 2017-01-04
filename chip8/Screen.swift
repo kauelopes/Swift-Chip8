@@ -12,16 +12,15 @@ import GameplayKit
 
 
 class Screen{
-    private var pixels: [[SKShapeNode]] = []
+    private var pixels: [[Pixel]] = []
     
     
     init(gameScene: GameScene) {
         for i in 0..<64{
-            var tmp : [SKShapeNode] = []
+            var tmp : [Pixel] = []
             for j in 0..<32{
-                let tmpNode = SKShapeNode(rect: CGRect(x: 8*i, y: 8*j, width: 8, height: 8))
-                tmpNode.fillColor = SKColor.black
-                tmpNode.strokeColor = SKColor.black
+                let tmpNode = Pixel(rect: CGRect(x: 8*i, y: 8*j, width: 8, height: 8))
+                tmpNode.setColor(color: SKColor.black)
                 gameScene.addChild(tmpNode)
                 tmp.append(tmpNode)
             }
@@ -33,17 +32,22 @@ class Screen{
         if(x>63 || x<0 || y>31 || y<0){
             print("TENTOU MUDAR PIXEL INVALIDO")
         }
-        pixels[x][y].fillColor = color
-        pixels[x][y].strokeColor = color
+        pixels[x][y].setColor(color: color)
     }
     
     func drawPixel(x:Int, y: Int) -> Bool{
-        if(pixels[x][y].strokeColor == SKColor.white){
+        if(x>63 || x<0 || y>31 || y<0){
+            print("TENTOU MUDAR PIXEL INVALIDO")
+        }
+        if(pixels[x][y].getColor() == SKColor.white){
+            print("BATEU")
             paintPixel(x: x, y: y, color: SKColor.black)
             return false
+        }else{
+            paintPixel(x: x, y: y, color: SKColor.white)
+            return true
         }
-        paintPixel(x: x, y: y, color: SKColor.white)
-        return true
+        
         
     }
     

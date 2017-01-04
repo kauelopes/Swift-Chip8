@@ -31,19 +31,109 @@ class Chip8{
     ///Special register to store memory addresses
     private var iRegister : UInt16 = 0
     
+    //Hex Keypad
+    private var button = [Bool!](repeating:nil, count: 16)
+    
     ///Program Counter
-    private var pc : UInt16 = 0x201
+    private var pc : UInt16 = 0x200
     
     private var stackSize : Int = 0
     
     private var screen : Screen!
     
+    private var delayTimer : UInt8 = 0
+    
+    private var soundTimer : UInt8 = 0
+    
     
     
     init(screen: Screen) {
         self.screen = screen
+        for i in 0..<16{
+            button[i] = false
+            v[i] = 0
+        }
+        for i in 0..<memory.count{
+            memory[i] = 0
+        }
+        hecadecimalSprites()
+        loadGameToMemory()
     }
     
+    
+    public func run(){
+        var operation : UInt16
+        while(true){
+            operation = UInt16(memory[Int(pc)])<<8 | UInt16(memory[Int(pc)+1])
+            let str = String(format: "%X", operation)
+            print("Executando operacao \(str)")
+            try! op(op: operation)
+            pc += 2
+            usleep(50000)
+            
+        }
+    }
+    
+    
+    private func loadGameToMemory(){
+        let a = FileHandle.init(forReadingAtPath: "/Users/Kaue/Documents/MISSILE")
+        let num = Int((a?.seekToEndOfFile())!)
+        a?.seek(toFileOffset: 0)
+        for i in 0..<num{
+            memory[0x200 + i] = (a?.readData(ofLength: 1).first)!
+        }
+    }
+    
+    private func hecadecimalSprites(){
+
+        let hexSprites :[UInt8] =
+        [0xF0, 0x90, 0x90, 0x90, 0xF0, //0
+        0x20, 0x60, 0x20, 0x20, 0x70, //1
+        0xF0, 0x10, 0xF0, 0x80, 0xF0, //2
+        0xF0, 0x10, 0xF0, 0x10, 0xF0, //3
+        0x90, 0x90, 0xF0, 0x10, 0x10, //4
+        0xF0, 0x80, 0xF0, 0x10, 0xF0, //5
+        0xF0, 0x80, 0xF0, 0x90, 0xF0, //6
+        0xF0, 0x10, 0x20, 0x40, 0x40, //7
+        0xF0, 0x90, 0xF0, 0x90, 0xF0, //8
+        0xF0, 0x90, 0xF0, 0x10, 0xF0, //9
+        0xF0, 0x90, 0xF0, 0x90, 0x90, //A
+        0xE0, 0x90, 0xE0, 0x90, 0xE0, //B
+        0xF0, 0x80, 0x80, 0x80, 0xF0, //C
+        0xE0, 0x90, 0x90, 0x90, 0xE0, //D
+        0xF0, 0x80, 0xF0, 0x80, 0xF0, //E
+        0xF0, 0x80, 0xF0, 0x80, 0x80  //F
+        ]
+        memory.removeLast(hexSprites.count)
+        memory = hexSprites + memory
+        
+        
+    }
+    
+    
+    
+    
+    public func teste(){
+        var initialState = [Bool!](repeating: nil, count: 16)
+        
+        for i in 0..<16{
+            initialState[i] = button[i]
+        }
+        
+        var a = true
+        while(a){
+            for i in 0..<16{
+                print(i)
+                if(initialState[i] == false){
+                    if(button[i] == true){
+                        a = false
+                    }
+                }else{
+                   initialState[i] = button[i]
+                }
+            }
+        }        
+    }
     
     
     
@@ -122,10 +212,10 @@ class Chip8{
             
             This instruction is only used on the old computers on which Chip-8 was originally implemented. It is ignored by modern interpreters.
             */
-        case (0,_,_,_):
-            //# TODO: - Verificar validade dessa op
-            pc = UInt16((b<<8)|(c<<4)|(d))
-            
+//        case (0,_,_,_):
+//            //# TODO: - Verificar validade dessa op
+//            print("Ignored Instruction")
+//            
             /*
             00E0 - CLS
             Clear the display.
@@ -150,7 +240,7 @@ class Chip8{
             The interpreter sets the program counter to nnn.
             */
         case (1,_,_,_):
-            pc = UInt16((b<<8)|(c<<4)|(d))
+            pc = (UInt16(b)<<8|UInt16(c<<4)|UInt16(d))
             
             
             /*
@@ -161,7 +251,7 @@ class Chip8{
             */
         case (2,_,_,_):
             try! pushToStack(num: pc)
-            pc = UInt16((b<<8)|(c<<4)|(d))
+            pc = (UInt16(b)<<8)|UInt16(c)<<4|UInt16(d)
             
             
             
@@ -223,7 +313,7 @@ class Chip8{
         
              */
         case (7,_,_,_):
-            v[Int(b)] = v[Int(b)] + c<<4|d
+            v[Int(b)] = UInt8((Int(c<<4|d) + Int(v[Int(b)]))%256)
 
             
             
@@ -271,7 +361,7 @@ class Chip8{
             Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx. An exclusive OR compares the corrseponding bits from two values, and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
             */
         case (8,_,_,3):
-            v[Int(b)] = v[Int(b)] ^ v[Int(c)]
+            v[Int(b)] = v[Int(b)]^v[Int(c)]
             
             
             
@@ -282,8 +372,8 @@ class Chip8{
             The values of Vx and Vy are added together. If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
             */
         case (8,_,_,4):
-            var sum : UInt16 = UInt16(v[Int(b)])+UInt16(v[Int(c)])
-            v[Int(0xF)] = UInt8(sum>>8)
+            let sum : UInt16 = UInt16(v[Int(b)])+UInt16(v[Int(c)])
+            v[Int(0xF)] = UInt8(sum>>8)&1
             v[Int(b)] = UInt8(sum&0xff)
             
             
@@ -365,7 +455,7 @@ class Chip8{
         The value of register I is set to nnn.
         */
         case (0xA,_,_,_):
-            iRegister = UInt16((b<<8)|(c<<4)|(d))
+            iRegister = (UInt16(b)<<8|UInt16(c)<<4|UInt16(d))
 
             
             
@@ -402,7 +492,7 @@ class Chip8{
         case (0xD,_,_,_):
             var notCollision = true
             for i in 0..<Int(d){
-                var drawBuffer = memory[Int(iRegister) + i]
+                let drawBuffer = memory[Int(iRegister) + i]
                 for j in 0..<8{
                     if((( Int(drawBuffer!) >> (7-j))&1) == 1){
                         notCollision = notCollision && screen.drawPixel(x: Int(v[Int(b)]) + j, y: Int(v[Int(c)]) + i)
@@ -426,7 +516,9 @@ class Chip8{
         Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
         */
         case (0xE,_,9,0xE):
-            print("nao implementado")
+            if(button[Int(v[Int(b)])]!){
+                pc += 2
+            }
             
             
             
@@ -437,7 +529,9 @@ class Chip8{
         Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
         */
         case (0xE,_,0xA,1):
-            print("nao implementado")
+            if(!button[Int(v[Int(b)])]){
+                pc += 2
+            }
             
            
             
@@ -448,7 +542,7 @@ class Chip8{
         The value of DT is placed into Vx.
         */
         case (0xF,_,0,7):
-            print("nao implementado")
+            v[Int(b)] = delayTimer
             
             
             
@@ -459,7 +553,26 @@ class Chip8{
         All execution stops until a key is pressed, then the value of that key is stored in Vx.
         */
         case (0xF,_,0,0xA):
-            print("nao implementado")
+            var initialState = [Bool!](repeating: nil, count: 16)
+            
+            for i in 0..<16{
+                initialState[i] = button[i]
+            }
+            
+            var check = true
+            while(check){
+                for i in 0..<16{
+                    print(i)
+                    if(initialState[i] == false){
+                        if(button[i] == true){
+                            check = false
+                        }
+                    }else{
+                        initialState[i] = button[i]
+                    }
+                }
+            }        
+
             
         
             
@@ -470,7 +583,7 @@ class Chip8{
         DT is set equal to the value of Vx.
         */
         case (0xF,_,1,5):
-            print("nao implementado")
+            delayTimer = v[Int(b)]
             
             
             
@@ -481,7 +594,7 @@ class Chip8{
         ST is set equal to the value of Vx.
         */
         case (0xF,_,1,8):
-            print("nao implementado")
+            soundTimer = v[Int(b)]
             
             
             
@@ -492,7 +605,7 @@ class Chip8{
         The values of I and Vx are added, and the results are stored in I.
         */
         case (0xF,_,1,0xE):
-            print("nao implementado")
+            iRegister = iRegister + UInt16(v[Int(b)])
             
             
             
@@ -503,7 +616,8 @@ class Chip8{
         The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
         */
         case (0xF,_,2,9):
-            print("nao implementado")
+            //# TODO: Preencher memoria com sprites de digitos HEX
+            iRegister = UInt16(Int(b)*5)
             
             
             
@@ -514,7 +628,9 @@ class Chip8{
         The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
         */
         case (0xF,_,3,3):
-            print("nao implementado")
+            memory[Int(iRegister)] = UInt8(getDig(dig: Int(v[Int(b)]), pos: 2))
+            memory[Int(iRegister) + 1] = UInt8(getDig(dig: Int(v[Int(b)]), pos: 1))
+            memory[Int(iRegister) + 2] = UInt8(getDig(dig: Int(v[Int(b)]), pos: 0))
             
             
             
@@ -525,8 +641,10 @@ class Chip8{
         The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
         */
         case (0xF,_,5,5):
-            print("nao implementado")
-            
+            for i in 0...Int(b){
+                memory[Int(iRegister) + i] = v[i]
+            }
+            iRegister = iRegister + UInt16(b) + UInt16(1)
             
             
             /*
@@ -535,12 +653,30 @@ class Chip8{
         
         The interpreter reads values from memory starting at location I into registers V0 through Vx.*/
         case (0xF,_,6,5):
-            print("nao implementado")
-        
+            for i in 0..<16{
+                v[i] = memory[Int(iRegister) + i]
+            }
         default:
             print("OPS, UNKNOWN INSTRUCTION")
         }
         
+    }
+    
+    
+    public func pressButton(key: Int){
+        button[key] = true
+    }
+    
+    public func releaseButton(key: Int){
+        button[key] = false
+    }
+    
+    //# MARK: -Math help Functions
+    
+    private func getDig(dig: Int, pos: Int) -> Int{
+        let a = dig/Int(NSDecimalNumber(decimal: pow(10,pos)))
+        let b = a - (a/10)*10
+        return b
     }
     
     
