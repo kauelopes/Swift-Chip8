@@ -13,6 +13,7 @@ class GameScene: SKScene {
     
     private var screen : Screen!
     private var chip : Chip8!
+    private var timer: Double = 0.0
     
     
     
@@ -114,6 +115,11 @@ class GameScene: SKScene {
 
     
     override func update(_ currentTime: TimeInterval) {
+        timer += currentTime
+        if(timer > 0.1){
+            timer = 0
+            chip.decreaseDelayTimer()
+        }
 
       
         

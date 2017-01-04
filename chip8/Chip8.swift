@@ -74,9 +74,15 @@ class Chip8{
         }
     }
     
+    public func decreaseDelayTimer(){
+        if(delayTimer>0){
+            delayTimer-=1
+        }
+    }
+    
     
     private func loadGameToMemory(){
-        let a = FileHandle.init(forReadingAtPath: "/Users/Kaue/Documents/INVADERS")
+        let a = FileHandle.init(forReadingAtPath: "/Users/Kaue/Documents/MAZE")
         let num = Int((a?.seekToEndOfFile())!)
         a?.seek(toFileOffset: 0)
         for i in 0..<num{
@@ -240,7 +246,7 @@ class Chip8{
             The interpreter sets the program counter to nnn.
             */
         case (1,_,_,_):
-            pc = (UInt16(b)<<8|UInt16(c<<4)|UInt16(d))
+            pc = (UInt16(b)<<8|UInt16(c<<4)|UInt16(d)) - UInt16(2)
             
             
             /*
@@ -251,7 +257,7 @@ class Chip8{
             */
         case (2,_,_,_):
             try! pushToStack(num: pc)
-            pc = (UInt16(b)<<8)|UInt16(c)<<4|UInt16(d)
+            pc = (UInt16(b)<<8)|UInt16(c)<<4|UInt16(d) - UInt16(2)
             
             
             
@@ -467,7 +473,7 @@ class Chip8{
         The program counter is set to nnn plus the value of V0.
         */
         case (0xB,_,_,_):
-            pc = UInt16((b<<8)|(c<<4)|(d)) + UInt16(v[0])
+            pc = UInt16((b<<8)|(c<<4)|(d)) + UInt16(v[0]) - UInt16(2)
             
             
             
