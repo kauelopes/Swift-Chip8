@@ -76,7 +76,7 @@ class Chip8{
     
     
     private func loadGameToMemory(){
-        let a = FileHandle.init(forReadingAtPath: "/Users/Kaue/Documents/MISSILE")
+        let a = FileHandle.init(forReadingAtPath: "/Users/Kaue/Documents/INVADERS")
         let num = Int((a?.seekToEndOfFile())!)
         a?.seek(toFileOffset: 0)
         for i in 0..<num{
@@ -313,7 +313,8 @@ class Chip8{
         
              */
         case (7,_,_,_):
-            v[Int(b)] = UInt8((Int(c<<4|d) + Int(v[Int(b)]))%256)
+            v[Int(b)] = UInt8((Int(v[Int(b)]) + Int(op & 0xFF))&0xff)
+
 
             
             
@@ -403,8 +404,8 @@ class Chip8{
         If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
             */
         case (8,_,_,6):
-            v[Int(0xF)] = v[Int(b)]%2
-            v[Int(b)] = v[Int(b)]>>1
+            v[Int(0xF)] = v[Int(c)]%2
+            v[Int(b)] = v[Int(c)]>>1
             
             /*
              8xy7 - SUBN Vx, Vy
@@ -430,8 +431,8 @@ class Chip8{
         If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
         */
         case (8,_,_,0xE):
-            v[Int(0xF)] = v[Int(b)]>>7
-            v[Int(b)] = v[Int(b)]<<1
+            v[Int(0xF)] = v[Int(c)]>>7
+            v[Int(b)] = v[Int(c)]<<1
             
             
             
@@ -494,7 +495,7 @@ class Chip8{
             for i in 0..<Int(d){
                 let drawBuffer = memory[Int(iRegister) + i]
                 for j in 0..<8{
-                    if((( Int(drawBuffer!) >> (7-j))&1) == 1){
+                    if( drawBuffer! & UInt8(0x80 >> j) != 0){
                         notCollision = notCollision && screen.drawPixel(x: Int(v[Int(b)]) + j, y: Int(v[Int(c)]) + i)
                     }
                 }
@@ -516,7 +517,7 @@ class Chip8{
         Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
         */
         case (0xE,_,9,0xE):
-            if(button[Int(v[Int(b)])]!){
+            if( button[Int(v[Int(b)])] == true ){
                 pc += 2
             }
             
@@ -653,9 +654,10 @@ class Chip8{
         
         The interpreter reads values from memory starting at location I into registers V0 through Vx.*/
         case (0xF,_,6,5):
-            for i in 0..<16{
+            for i in 0...Int(b){
                 v[i] = memory[Int(iRegister) + i]
             }
+            iRegister = iRegister + UInt16(b) + UInt16(1)
         default:
             print("OPS, UNKNOWN INSTRUCTION")
         }

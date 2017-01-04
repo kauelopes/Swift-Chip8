@@ -38,6 +38,7 @@ class Screen{
     func drawPixel(x:Int, y: Int) -> Bool{
         if(x>63 || x<0 || y>31 || y<0){
             print("TENTOU MUDAR PIXEL INVALIDO")
+            return true
         }
         if(pixels[x][y].getColor() == SKColor.white){
             print("BATEU")
